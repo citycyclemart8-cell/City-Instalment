@@ -1,0 +1,292 @@
+import sys
+
+with open('index.html', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+import re
+
+# Find the start and end indices of the customerHistoryModal block
+start_str = '<!-- Customer Payment History Modal -->'
+end_str = '<!-- View Customer Modal -->'
+start_idx = content.find(start_str)
+end_idx = content.find(end_str)
+
+if start_idx == -1 or end_idx == -1:
+    print('Could not find start or end bounds in index.html')
+    sys.exit(1)
+
+new_modal_html = '''<!-- Customer Payment History Modal -->
+    <div class="modal-overlay full-screen-modal" id="customerHistoryModal">
+        <div class="modal-content" id="chModalContent">
+            <div class="modal-header">
+                <h3>Customer Payment History (Ledger)</h3>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline btn-sm" onclick="printPassbook()"><i class="fa-solid fa-book"></i> Print Passbook</button>
+                    <button class="btn btn-outline btn-sm" onclick="printLedger()"><i class="fa-solid fa-print"></i> Print Ledger</button>
+                    <button class="btn btn-primary btn-sm" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-success btn-sm" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportJSON()"><i class="fa-solid fa-code"></i> JSON</button>
+                    <button class="close-modal" onclick="closeCustomerHistory()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" id="chPrintArea">
+                
+                <!-- SECTION 1: CUSTOMER DETAILS -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Customer Details</h4>
+                <div class="ch-header-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+                    <div class="ch-header-item" style="grid-row: span 2;">
+                        <img id="chPhoto" src="https://via.placeholder.com/100?text=Photo" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--primary);">
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer ID</label>
+                        <span id="chID">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Name</label>
+                        <span id="chName">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Phone Number</label>
+                        <span id="chPhone">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>WhatsApp Number</label>
+                        <span id="chWhatsApp">-</span>
+                    </div>
+                    <div class="ch-header-item" style="grid-column: span 2;">
+                        <label>Address</label>
+                        <span id="chAddress">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Collection Book</label>
+                        <span id="chBook">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Status</label>
+                        <span id="chStatusBadge">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Since</label>
+                        <span id="chSince">-</span>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: INSTALLMENT DETAILS -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Installment Details</h4>
+                <div class="ch-card" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                    <div class="ch-header-item"><label>Installment ID</label><span id="idInstID">-</span></div>
+                    <div class="ch-header-item"><label>Invoice Number</label><span id="idInvoice">-</span></div>
+                    <div class="ch-header-item"><label>Product Name</label><span id="idProduct">-</span></div>
+                    <div class="ch-header-item"><label>Brand</label><span id="idBrand">-</span></div>
+                    <div class="ch-header-item"><label>Model Number</label><span id="idModel">-</span></div>
+                    <div class="ch-header-item"><label>Serial Number</label><span id="idSerial">-</span></div>
+                    <div class="ch-header-item"><label>Purchase Date</label><span id="idPurchaseDate">-</span></div>
+                    <div class="ch-header-item"><label>Selling Price</label><span id="idSellingPrice">-</span></div>
+                    <div class="ch-header-item"><label>Down Payment</label><span id="idDownPayment">-</span></div>
+                    <div class="ch-header-item"><label>Finance Amount</label><span id="idFinanceAmt">-</span></div>
+                    <div class="ch-header-item"><label>Weekly Installment</label><span id="idWeeklyAmt">-</span></div>
+                    <div class="ch-header-item"><label>Number of Weeks</label><span id="idNumWeeks">-</span></div>
+                    <div class="ch-header-item"><label>Weeks Paid</label><span id="idWeeksPaid">-</span></div>
+                    <div class="ch-header-item"><label>Weeks Remaining</label><span id="idWeeksRem">-</span></div>
+                    <div class="ch-header-item"><label>Outstanding Balance</label><span id="idOutBal" class="text-danger">-</span></div>
+                    <div class="ch-header-item"><label>Collection Day</label><span id="idCollDay">-</span></div>
+                    <div class="ch-header-item"><label>Collection Book</label><span id="idCollBook">-</span></div>
+                    <div class="ch-header-item"><label>First Collection Date</label><span id="idFirstDate">-</span></div>
+                    <div class="ch-header-item"><label>Last Collection Date</label><span id="idLastDate">-</span></div>
+                    <div class="ch-header-item"><label>Next Collection Date</label><span id="idNextDate">-</span></div>
+                    <div class="ch-header-item"><label>Expected Completion Date</label><span id="idExpectedDate">-</span></div>
+                    <div class="ch-header-item"><label>Installment Status</label><span id="idInstStatus">-</span></div>
+                </div>
+
+                <!-- SECTION 3: PAYMENT SUMMARY -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Payment Summary</h4>
+                <div class="ch-summary-cards">
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Finance Amount</p><h3 id="chCardFinance">?0</h3></div>
+                    <div class="ch-card success"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Total Amount Paid</p><h3 id="chCardPaid">?0</h3></div>
+                    <div class="ch-card warning"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Outstanding Balance</p><h3 id="chCardBalance">?0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Total Collections Received</p><h3 id="chCardCollections">0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Remaining Weeks</p><h3 id="chCardRemWeeks">0</h3></div>
+                    <div class="ch-card danger"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Missed Collections</p><h3 id="chCardMissed">0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Last Payment Date</p><h4 id="chCardLastDate">-</h4></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Next Due Date</p><h4 id="chCardNextDate">-</h4></div>
+                </div>
+
+                <!-- SECTION 8: INSTALLMENT CALCULATIONS -->
+                <div class="ch-card" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Average Weekly Payment:</span> <strong id="calcAvgWeekly">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Collection Percentage:</span> <strong id="calcPercentage">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Remaining Installment Amt:</span> <strong id="calcRemAmt">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Total Weeks:</span> <strong id="calcTotalWeeks">-</strong></div>
+                </div>
+
+                <!-- SECTION 4: INSTALLMENT PROGRESS -->
+                <div class="ch-progress-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>Payment Progress <span id="chProgressWeeksText" style="color:var(--text-muted); margin-left:10px;">(0 of 0 Weeks Completed)</span></span>
+                        <span id="chProgressText">0%</span>
+                    </div>
+                    <div class="ch-progress-bar-wrap">
+                        <div class="ch-progress-fill" id="chProgressBar"></div>
+                    </div>
+                </div>
+
+                <!-- Toolbar & Filters -->
+                <div class="ch-toolbar" data-html2canvas-ignore="true" style="margin-bottom:15px;">
+                    <div class="ch-filters">
+                        <button class="btn btn-outline btn-sm active" id="btnTableView" onclick="toggleChView('table')"><i class="fa-solid fa-table"></i> Payment History</button>
+                        <button class="btn btn-outline btn-sm" id="btnMissedView" onclick="toggleChView('missed')"><i class="fa-solid fa-triangle-exclamation"></i> Missed Collections</button>
+                        <button class="btn btn-outline btn-sm" id="btnTimelineView" onclick="toggleChView('timeline')"><i class="fa-solid fa-stream"></i> Timeline</button>
+                    </div>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="chSearch" onkeyup="searchCustomerHistory()" placeholder="Search history...">
+                    </div>
+                </div>
+
+                <!-- SECTION 5: PAYMENT HISTORY TABLE -->
+                <div class="table-responsive" id="chTableView">
+                    <table class="table" id="chTable">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Collection Date</th>
+                                <th>Collection Time</th>
+                                <th>Week No</th>
+                                <th>Installment No</th>
+                                <th>Collection Book</th>
+                                <th>Amount Paid</th>
+                                <th>Payment Method</th>
+                                <th>Collected By</th>
+                                <th>Balance After</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chTableBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 6: MISSED COLLECTIONS TABLE -->
+                <div class="table-responsive" id="chMissedView" style="display:none;">
+                    <table class="table" id="chMissedTable">
+                        <thead>
+                            <tr>
+                                <th>Missed Date</th>
+                                <th>Week No</th>
+                                <th>Reason</th>
+                                <th>Collection Book</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chMissedBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 7: INSTALLMENT TIMELINE -->
+                <div id="chTimelineView" style="display:none;">
+                    <div class="ch-timeline" id="chTimelineBody">
+                        <!-- Dynamic -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <!-- SECTION 9: PRINTABLE CUSTOMER PASSBOOK (Hidden normally) -->
+    <div id="passbookPrintArea" style="display:none; padding:40px; background:white; color:black; font-family:sans-serif;">
+        <div style="text-align:center; margin-bottom:20px;">
+            <h1 style="margin:0; font-size:24px;">CITY Installment Collection Management</h1>
+            <h2 style="margin:5px 0; font-size:18px;">Customer Passbook</h2>
+            <p id="pbPrintDate" style="margin:0; font-size:12px; color:#555;"></p>
+        </div>
+        <hr style="border:1px solid #ccc;">
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+            <div style="width:48%;">
+                <h3 style="border-bottom:1px solid #eee; padding-bottom:5px;">Customer Details</h3>
+                <p><strong>Name:</strong> <span id="pbCustName"></span></p>
+                <p><strong>ID:</strong> <span id="pbCustID"></span></p>
+                <p><strong>Phone:</strong> <span id="pbCustPhone"></span></p>
+                <p><strong>Address:</strong> <span id="pbCustAddress"></span></p>
+            </div>
+            <div style="width:48%;">
+                <h3 style="border-bottom:1px solid #eee; padding-bottom:5px;">Product Details</h3>
+                <p><strong>Product:</strong> <span id="pbProduct"></span></p>
+                <p><strong>Brand:</strong> <span id="pbBrand"></span></p>
+                <p><strong>Model:</strong> <span id="pbModel"></span></p>
+                <p><strong>Serial:</strong> <span id="pbSerial"></span></p>
+            </div>
+        </div>
+        
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Installment Details</h3>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+            <p style="width:30%;"><strong>Finance Amt:</strong> <span id="pbFinance"></span></p>
+            <p style="width:30%;"><strong>Weekly Amt:</strong> <span id="pbWeekly"></span></p>
+            <p style="width:30%;"><strong>Total Weeks:</strong> <span id="pbTotalWeeks"></span></p>
+            <p style="width:30%;"><strong>Purchase Date:</strong> <span id="pbPurchaseDate"></span></p>
+            <p style="width:30%;"><strong>Book:</strong> <span id="pbBook"></span></p>
+            <p style="width:30%;"><strong>Status:</strong> <span id="pbStatus"></span></p>
+        </div>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Finance Summary</h3>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <p><strong>Total Paid:</strong> <span id="pbTotalPaid"></span></p>
+            <p><strong>Outstanding Balance:</strong> <span id="pbOutBal"></span></p>
+            <p><strong>Progress:</strong> <span id="pbProgressText"></span></p>
+        </div>
+        <div style="width:100%; height:15px; background:#eee; border-radius:5px; overflow:hidden;">
+            <div id="pbProgressBar" style="height:100%; background:#4CAF50; width:0%;"></div>
+        </div>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:30px;">Payment History</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12px;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="border:1px solid #ddd; padding:5px;">Date</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Receipt</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Week</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Amount</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Balance</th>
+                </tr>
+            </thead>
+            <tbody id="pbHistoryBody"></tbody>
+        </table>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Missed Collections</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:40px; font-size:12px;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="border:1px solid #ddd; padding:5px;">Date</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Week</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Reason / Remarks</th>
+                </tr>
+            </thead>
+            <tbody id="pbMissedBody"></tbody>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; margin-top:60px;">
+            <div style="text-align:center;">
+                <p>_______________________</p>
+                <p>Customer Signature</p>
+            </div>
+            <div style="text-align:center;">
+                <p>_______________________</p>
+                <p>Authorized Signatory</p>
+            </div>
+        </div>
+    </div>
+    
+'''
+
+new_content = content[:start_idx] + new_modal_html + "\n    " + content[end_idx:]
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(new_content)
+    
+print("Successfully replaced modal HTML.")

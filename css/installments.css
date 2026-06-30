@@ -1,0 +1,41 @@
+/* installments.css */
+
+.progress-bar-container {
+    width: 100%;
+    background-color: var(--bg-dark);
+    border-radius: 10px;
+    height: 12px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+.progress-bar {
+    height: 100%;
+    background-color: var(--success);
+    width: 0%;
+    transition: width 0.4s ease;
+}
+.progress-bar.warning { background-color: var(--warning); }
+.progress-bar.danger { background-color: var(--danger); }
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+}
+
+/* Summary Card within Modal */
+.installment-summary-card {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-left: 4px solid var(--primary);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+}
+.summary-item p { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+.summary-item h4 { margin: 5px 0 0; font-size: 1.1rem; }

@@ -1,0 +1,76 @@
+/* reports.css */
+
+.report-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.report-category-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+.report-btn {
+    padding: 15px;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.report-btn:hover, .report-btn.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.report-view-area {
+    background-color: var(--bg-panel);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--shadow-soft);
+    min-height: 400px;
+}
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+}
+.report-title h3 { margin: 0; color: var(--primary); }
+
+.report-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/* Modal specific for Reports Preview */
+.report-preview-modal .modal-content {
+    background-color: white;
+    color: black;
+}
+.report-preview-header {
+    text-align: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+.report-preview-header h2 { margin: 0; }
+.report-preview-footer {
+    margin-top: 40px;
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+}

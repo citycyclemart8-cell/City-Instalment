@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITY - Installment Collection Management System</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/customers.css">
+    <link rel="stylesheet" href="css/products.css">
+    <link rel="stylesheet" href="css/installments.css">
+    <link rel="stylesheet" href="css/collections.css">
+    <link rel="stylesheet" href="css/reports.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .full-screen-modal .modal-content {
+            max-width: 95vw;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .full-screen-modal .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+        }
+        .ch-header-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .ch-header-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .ch-header-item label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .ch-header-item span {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .ch-summary-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 900px) {
+            .ch-summary-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+        .ch-card {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .ch-card.success { border-left-color: var(--success); }
+        .ch-card.danger { border-left-color: var(--danger); }
+        .ch-card.warning { border-left-color: var(--warning); }
+        
+        .ch-progress-container {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .ch-progress-bar-wrap {
+            width: 100%;
+            height: 25px;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        .ch-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: width 1s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .ch-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .ch-filters {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .ch-timeline {
+            border-left: 3px solid var(--primary);
+            margin: 30px 20px;
+            padding-left: 20px;
+        }
+        .ch-timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .ch-timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -28px;
+            top: 15px;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 3px solid var(--bg-color);
+        }
+        .badge.ch-paid { background-color: var(--success); }
+        .badge.ch-partial { background-color: var(--warning); color: #000; }
+        .badge.ch-missed { background-color: var(--danger); }
+        .badge.ch-advance { background-color: #0dcaf0; color: #000; }
+        
+        /* Printable Passbook and Reports */
+        @media print {
+            body.print-passbook * { visibility: hidden; }
+            body.print-passbook #passbookPrintArea, body.print-passbook #passbookPrintArea * { visibility: visible; }
+            body.print-passbook #passbookPrintArea { position: absolute; left: 0; top: 0; width: 100%; color: black; background: white; }
+            
+            body { background-color: white !important; color: black !important; }
+            .panel { background-color: white !important; color: black !important; border: 1px solid #ccc !important; box-shadow: none !important; }
+            .table th, .table td { color: black !important; border-bottom: 1px solid #ccc !important; }
+            .sidebar { display: none !important; }
+            .main-content { margin-left: 0 !important; }
+            .top-header { display: none !important; }
+            .quick-actions { display: none !important; }
+            .report-category-buttons { display: none !important; }
+            .report-controls { display: none !important; }
+            h1, h2, h3, h4, h5, h6 { color: black !important; }
+            .text-muted { color: #555 !important; }
+            .text-success { color: #198754 !important; }
+            .text-danger { color: #dc3545 !important; }
+            .text-warning { color: #ffc107 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-area">
+                    <i class="fa-solid fa-city logo-icon"></i>
+                    <div class="logo-text">
+                        <h1>CITY</h1>
+                        <span>Installment Collection</span>
+                    </div>
+                </div>
+                <button class="toggle-btn" id="sidebarToggleBtn"><i class="fa-solid fa-bars"></i></button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul id="navMenu">
+                    <li class="active" data-target="dashboard"><a href="#"><i class="fa-solid fa-house"></i> <span>Dashboard</span></a></li>
+                    <li data-target="customers"><a href="#"><i class="fa-solid fa-users"></i> <span>Customers</span></a></li>
+                    <li data-target="products"><a href="#"><i class="fa-solid fa-box"></i> <span>Products</span></a></li>
+                    <li data-target="installments"><a href="#"><i class="fa-solid fa-file-invoice-dollar"></i> <span>Installments</span></a></li>
+                    <li data-target="collections"><a href="#"><i class="fa-solid fa-hand-holding-dollar"></i> <span>Collections</span></a></li>
+                    <li data-target="reports"><a href="#"><i class="fa-solid fa-chart-pie"></i> <span>Reports</span></a></li>
+                    <li data-target="paymentHistory"><a href="#"><i class="fa-solid fa-clock-rotate-left"></i> <span>Payment History</span></a></li>
+                    <li data-target="backup"><a href="#"><i class="fa-solid fa-cloud-arrow-up"></i> <span>Backup</span></a></li>
+                    <li data-target="settings"><a href="#"><i class="fa-solid fa-gear"></i> <span>Settings</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass" style="cursor:pointer;" onclick="document.getElementById('globalSearch').focus();"></i>
+                        <input type="text" id="globalSearch" placeholder="Search customer by name, phone number, customer ID or product...">
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="header-date-time">
+                        <span id="currentDate"></span>
+                        <span id="liveClock" class="clock"></span>
+                    </div>
+                    <div class="notification-wrapper">
+                        <button class="icon-btn" id="notificationBtn">
+                            <i class="fa-solid fa-bell"></i>
+                            <span class="badge">0</span>
+                        </button>
+                        <div class="notification-dropdown hidden" id="notificationDropdown">
+                            <div class="dropdown-header">
+                                <h4>Notifications</h4>
+                            </div>
+                            <div class="dropdown-body" id="notificationList">
+                                <p class="text-center text-muted p-1">No Notifications Available</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                        <div class="user-info">
+                            <span class="welcome-text">Welcome, Admin</span>
+                            <span class="business-name" id="headerBusinessName">CITY Admin</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Pages -->
+            <div class="page-container">
+                <!-- Dashboard Page -->
+                <section id="dashboard" class="page active">
+                    <div class="page-header">
+                        <h2>Dashboard</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="document.querySelector('li[data-target=\'customers\']').click(); openCustomerModal();"><i class="fa-solid fa-user-plus"></i> Add Customer</button>
+                            <button class="btn btn-success" onclick="document.querySelector('li[data-target=\'collections\']').click(); if(typeof openGenericCollectionModal === 'function') openGenericCollectionModal();"><i class="fa-solid fa-money-bill-wave"></i> Receive Collection</button>
+                            <button class="btn btn-secondary" onclick="document.querySelector('li[data-target=\'reports\']').click(); document.getElementById('reportDate').valueAsDate = new Date(); if(typeof loadReportView === 'function') loadReportView('daily'); else generateReport();"><i class="fa-solid fa-print"></i> Today's Report</button>
+                        </div>
+                    </div>
+
+                    <!-- Highlight Card -->
+                    <div class="highlight-card">
+                        <div class="highlight-content">
+                            <h3>Today's Total Collection</h3>
+                            <h1 id="dashTodayTotal">₹0</h1>
+                        </div>
+                        <div class="highlight-icon"><i class="fa-solid fa-wallet"></i></div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="summary-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                            <div class="stat-details">
+                                <p>Total Customers</p>
+                                <h3 id="dashTotalCustomers">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-file-contract"></i></div>
+                            <div class="stat-details">
+                                <p>Active Installments</p>
+                                <h3 id="dashActiveInstallments">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-calendar-week"></i></div>
+                            <div class="stat-details">
+                                <p>Weekly Collection</p>
+                                <h3 id="dashWeeklyCollection">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                            <div class="stat-details">
+                                <p>Monthly Collection</p>
+                                <h3 id="dashMonthlyCollection">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card warning">
+                            <div class="stat-icon"><i class="fa-solid fa-scale-unbalanced"></i></div>
+                            <div class="stat-details">
+                                <p>Outstanding Balance</p>
+                                <h3 id="dashOutstandingBalance">₹0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card danger">
+                            <div class="stat-icon"><i class="fa-solid fa-user-clock"></i></div>
+                            <div class="stat-details">
+                                <p>Overdue Customers</p>
+                                <h3 id="dashOverdueCustomers">0</h3>
+                            </div>
+                        </div>
+                        <div class="stat-card primary">
+                            <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                            <div class="stat-details">
+                                <p>Pending Today</p>
+                                <h3 id="dashPendingCollectionsToday">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collection Books -->
+                    <div class="section-title">
+                        <h3>Collection Books Overview</h3>
+                    </div>
+                    <div class="books-grid">
+                        <div class="book-card">
+                            <div class="book-header monday">Monday Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashMondayCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashMondayColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashMondayPend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="book-card">
+                            <div class="book-header tuesday">Tuesday Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashTuesdayCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashTuesdayColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashTuesdayPend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="book-card">
+                            <div class="book-header wednesday">Wednesday Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashWednesdayCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashWednesdayColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashWednesdayPend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="book-card">
+                            <div class="book-header thursday">Thursday Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashThursdayCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashThursdayColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashThursdayPend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="book-card">
+                            <div class="book-header friday">Friday Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashFridayCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashFridayColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashFridayPend">0</span></div>
+                            </div>
+                        </div>
+                        <div class="book-card">
+                            <div class="book-header common">Common Book</div>
+                            <div class="book-body">
+                                <div class="book-stat"><span>Customers:</span> <span id="dashCommonCust">0</span></div>
+                                <div class="book-stat"><span>Today:</span> <span id="dashCommonColl">₹0</span></div>
+                                <div class="book-stat"><span>Pending:</span> <span id="dashCommonPend">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Collection Summary -->
+                    <div class="section-title mt-2">
+                        <h3>Weekly Collection Overview</h3>
+                    </div>
+                    <div class="weekly-overview-grid">
+                        <div class="weekly-item monday">Monday: <span id="weeklyMonday">₹0</span></div>
+                        <div class="weekly-item tuesday">Tuesday: <span id="weeklyTuesday">₹0</span></div>
+                        <div class="weekly-item wednesday">Wednesday: <span id="weeklyWednesday">₹0</span></div>
+                        <div class="weekly-item thursday">Thursday: <span id="weeklyThursday">₹0</span></div>
+                        <div class="weekly-item friday">Friday: <span id="weeklyFriday">₹0</span></div>
+                        <div class="weekly-item common">Common: <span id="weeklyCommon">₹0</span></div>
+                    </div>
+
+                    <div class="dashboard-bottom-grid">
+                        <!-- Recent Collections -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>Recent Collections</h3>
+                                <button class="btn btn-sm btn-outline" onclick="document.querySelector('li[data-target=\'collections\']').click()">View All</button>
+                            </div>
+                            <div class="panel-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Customer Name</th>
+                                                <th>Product Name</th>
+                                                <th>Book</th>
+                                                <th>Amount Paid</th>
+                                                <th>Time</th>
+                                                <th>Remaining</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dashRecentCollectionsList">
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted p-2">No collection records found.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel-column">
+                            <!-- Due Customers -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h3>Due Customers Today</h3>
+                                </div>
+                                <div class="panel-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Customer Name</th>
+                                                    <th>Phone</th>
+                                                    <th>Amount</th>
+                                                    <th>Book</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="dashDueCustomersList">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted p-2">No customers due today.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Backup Widget -->
+                            <div class="panel">
+                                <div class="panel-header">
+                                    <h3>Backup Status</h3>
+                                </div>
+                                <div class="panel-body widget-body">
+                                    <div class="widget-item">
+                                        <div class="widget-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                                        <div class="widget-text">
+                                            <p>Last Backup</p>
+                                            <h4 id="dashLastBackup">Not Configured</h4>
+                                        </div>
+                                    </div>
+                                    <div class="widget-item">
+                                        <div class="widget-icon"><i class="fa-solid fa-cloud"></i></div>
+                                        <div class="widget-text">
+                                            <p>Cloud Backup</p>
+                                            <h4>Not Configured</h4>
+                                        </div>
+                                    </div>
+                                    <div class="widget-item">
+                                        <div class="widget-icon"><i class="fa-solid fa-database"></i></div>
+                                        <div class="widget-text">
+                                            <p>Database Status</p>
+                                            <h4 class="text-success" id="dashDbStatus">Not Configured</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Placeholder -->
+                    <div class="section-title mt-2">
+                        <h3>Analytics Overview</h3>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>Weekly Collection</h3>
+                            </div>
+                            <div class="panel-body">
+                                <canvas id="weeklyCollectionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>Monthly Collection</h3>
+                            </div>
+                            <div class="panel-body">
+                                <canvas id="monthlyCollectionChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>Outstanding Balance</h3>
+                            </div>
+                            <div class="panel-body">
+                                <canvas id="outstandingBalanceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>Payment Status</h3>
+                            </div>
+                            <div class="panel-body">
+                                <canvas id="paymentStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Customers Page -->
+                <section id="customers" class="page">
+                    <div class="page-header">
+                        <h2>Customers</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="openCustomerModal()"><i class="fa-solid fa-user-plus"></i> Add New Customer</button>
+                            <button class="btn btn-outline" onclick="exportCustomers()"><i class="fa-solid fa-download"></i> Export</button>
+                            <button class="btn btn-outline" onclick="importCustomers()"><i class="fa-solid fa-upload"></i> Import</button>
+                            <button class="btn btn-secondary" onclick="printCustomer()"><i class="fa-solid fa-print"></i> Print</button>
+                        </div>
+                    </div>
+
+                    <div class="page-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="customerSearch" placeholder="Search by name, phone, ID, product, book...">
+                        </div>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="All">All</button>
+                            <button class="filter-btn" data-filter="Monday">Monday</button>
+                            <button class="filter-btn" data-filter="Tuesday">Tuesday</button>
+                            <button class="filter-btn" data-filter="Wednesday">Wednesday</button>
+                            <button class="filter-btn" data-filter="Thursday">Thursday</button>
+                            <button class="filter-btn" data-filter="Friday">Friday</button>
+                            <button class="filter-btn" data-filter="Common">Common</button>
+                            <button class="filter-btn" data-filter="Active">Active</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-body p-0">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Customer Name</th>
+                                            <th>Phone</th>
+                                            <th>Product</th>
+                                            <th>Book</th>
+                                            <th>Weekly Amt</th>
+                                            <th>Balance</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="customersTableBody">
+                                        <!-- Customers will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Products Page -->
+                <section id="products" class="page">
+                    <div class="page-header">
+                        <h2>Products</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="openProductModal()"><i class="fa-solid fa-box-open"></i> Add Product</button>
+                            <button class="btn btn-outline" onclick="exportProducts()"><i class="fa-solid fa-download"></i> Export</button>
+                            <button class="btn btn-outline" onclick="importProducts()"><i class="fa-solid fa-upload"></i> Import</button>
+                            <button class="btn btn-secondary" onclick="printProducts()"><i class="fa-solid fa-print"></i> Print</button>
+                        </div>
+                    </div>
+
+                    <div class="page-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="productSearch" placeholder="Search by ID, name, brand, category, barcode...">
+                        </div>
+                        <div class="filters category-filters" id="productFilters">
+                            <button class="filter-btn active" data-filter="All">All Products</button>
+                            <button class="filter-btn" data-filter="Electronics">Electronics</button>
+                            <button class="filter-btn" data-filter="Furniture">Furniture</button>
+                            <button class="filter-btn" data-filter="Home Appliances">Home Appliances</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-body p-0">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Image</th>
+                                            <th>ID</th>
+                                            <th>Product Name</th>
+                                            <th>Category</th>
+                                            <th>Brand</th>
+                                            <th>Price</th>
+                                            <th>Warranty</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productsTableBody">
+                                        <!-- Products will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Installments Page -->
+                <section id="installments" class="page">
+                    <div class="page-header">
+                        <h2>Installments</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="openInstallmentModal()"><i class="fa-solid fa-file-signature"></i> New Installment</button>
+                            <button class="btn btn-outline" onclick="exportInstallments()"><i class="fa-solid fa-download"></i> Export</button>
+                            <button class="btn btn-outline" onclick="importInstallments()"><i class="fa-solid fa-upload"></i> Import</button>
+                            <button class="btn btn-secondary" onclick="printInstallments()"><i class="fa-solid fa-print"></i> Print</button>
+                        </div>
+                    </div>
+
+                    <div class="page-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="installmentSearch" placeholder="Search by Customer, ID, Invoice, Product...">
+                        </div>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="All">All</button>
+                            <button class="filter-btn" data-filter="Monday">Monday</button>
+                            <button class="filter-btn" data-filter="Tuesday">Tuesday</button>
+                            <button class="filter-btn" data-filter="Wednesday">Wednesday</button>
+                            <button class="filter-btn" data-filter="Thursday">Thursday</button>
+                            <button class="filter-btn" data-filter="Friday">Friday</button>
+                            <button class="filter-btn" data-filter="Common">Common</button>
+                            <button class="filter-btn" data-filter="Active">Active</button>
+                            <button class="filter-btn" data-filter="Completed">Completed</button>
+                            <button class="filter-btn" data-filter="Overdue">Overdue</button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-body p-0">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Customer</th>
+                                            <th>Product</th>
+                                            <th>Book</th>
+                                            <th>Weekly Amt</th>
+                                            <th>Balance</th>
+                                            <th>Progress</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="installmentsTableBody">
+                                        <!-- Installments will load here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Collections Page -->
+                <section id="collections" class="page">
+                    <div class="page-header">
+                        <h2>Collections / Receive Installment</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-success" onclick="openGenericCollectionModal()"><i class="fa-solid fa-money-bill-wave"></i> Receive Payment</button>
+                            <button class="btn btn-primary" onclick="generateDailySummary()"><i class="fa-solid fa-chart-line"></i> Daily Summary</button>
+                        </div>
+                    </div>
+
+                    <!-- Book Selection Buttons -->
+                    <div class="book-filters" id="collectionBookFilters">
+                        <button class="book-btn monday active" data-book="Monday">Monday Book</button>
+                        <button class="book-btn tuesday" data-book="Tuesday">Tuesday Book</button>
+                        <button class="book-btn wednesday" data-book="Wednesday">Wednesday Book</button>
+                        <button class="book-btn thursday" data-book="Thursday">Thursday Book</button>
+                        <button class="book-btn friday" data-book="Friday">Friday Book</button>
+                        <button class="book-btn common" data-book="Common">Common Book</button>
+                    </div>
+
+                    <div class="page-toolbar">
+                        <div class="search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="collectionSearch" placeholder="Search customer in selected book...">
+                        </div>
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="All">All</button>
+                            <button class="filter-btn" data-filter="Pending Today">Pending Today</button>
+                            <button class="filter-btn" data-filter="Paid Today">Paid Today</button>
+                            <button class="filter-btn" data-filter="Missed Today">Missed Today</button>
+                        </div>
+                    </div>
+
+                    <!-- Highlight for Today's Book Collection -->
+                    <div class="highlight-card" style="padding: 15px 30px; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="margin-bottom: 5px; font-size: 1rem; opacity: 0.9;" id="collCurrentBookTitle">Monday Book Collection</h3>
+                            <h1 style="font-size: 2rem;" id="collCurrentBookTotal">₹0</h1>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="margin:0; font-size: 0.9rem;">Pending Customers: <strong id="collCurrentBookPending">0</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-body p-0">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Customer ID</th>
+                                            <th>Customer Name</th>
+                                            <th>Phone Number</th>
+                                            <th>Product Name</th>
+                                            <th>Weekly Amt</th>
+                                            <th>Balance</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="collectionsTableBody">
+                                        <!-- Collection customers will load here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports Page -->
+                <section id="reports" class="page">
+                    <div class="page-header">
+                        <h2>Reports & Analytics</h2>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="printReport()"><i class="fa-solid fa-print"></i> Print Report</button>
+                        </div>
+                    </div>
+
+                    <div class="report-category-buttons">
+                        <button class="report-btn active" onclick="loadReportView('daily')">Daily Collection</button>
+                        <button class="report-btn" onclick="loadReportView('weekly')">Weekly Summary</button>
+                        <button class="report-btn" onclick="loadReportView('outstanding')">Outstanding Balances</button>
+                        <button class="report-btn" onclick="loadReportView('missed')">Missed Collections</button>
+                    </div>
+
+                    <div class="report-view-area">
+                        <div class="report-header">
+                            <div class="report-title">
+                                <h3 id="reportTitle">Daily Collection Report</h3>
+                            </div>
+                            <div class="report-controls" style="display: flex; gap: 10px;">
+                                <input type="date" id="reportDate" class="form-control" onchange="generateReport()">
+                                <button class="btn btn-secondary" onclick="generateReport()">Generate</button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" id="reportTableContainer">
+                            <table class="table">
+                                <thead id="reportTableHeader">
+                                    <!-- Dynamic -->
+                                </thead>
+                                <tbody id="reportTableBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                                <tfoot id="reportTableFooter">
+                                    <!-- Dynamic -->
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Page -->
+                <section id="settings" class="page">
+                    <div class="page-header">
+                        <h2>Settings & Backup</h2>
+                    </div>
+
+                    <div class="settings-container">
+                        <div class="settings-sidebar">
+                            <div class="settings-nav">
+                                <button class="active" onclick="switchSettingsTab('general', this)"><i class="fa-solid fa-gear"></i> General Settings</button>
+                                <button onclick="switchSettingsTab('profile', this)"><i class="fa-solid fa-user"></i> Admin Profile</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-content-area">
+                            <div id="settings-general" class="settings-section active">
+                                <h3>General System Settings</h3>
+                                <form id="generalSettingsForm">
+                                    <div class="form-grid">
+                                        <div class="form-group">
+                                            <label>Company Name</label>
+                                            <input type="text" id="setCompanyName" class="form-control" value="CITY Installment Collection">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Currency Symbol</label>
+                                            <input type="text" id="setCurrency" class="form-control" value="₹">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Default Book</label>
+                                            <select id="setDefaultBook" class="form-control">
+                                                <option value="Monday">Monday Book</option>
+                                                <option value="Tuesday">Tuesday Book</option>
+                                                <option value="Wednesday">Wednesday Book</option>
+                                                <option value="Thursday">Thursday Book</option>
+                                                <option value="Friday">Friday Book</option>
+                                                <option value="Common">Common Book</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary mt-3" onclick="saveSettings()">Save Settings</button>
+                                </form>
+                            </div>
+
+                            <div id="settings-profile" class="settings-section">
+                                <h3>Admin Profile Placeholder</h3>
+                                <p>Integration for Admin login and multiple users is planned for future updates with SQLite/Firebase.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Payment History Search Page -->
+                <section id="paymentHistory" class="page">
+                    <div class="page-header">
+                        <h2>Payment History & Customer Ledgers</h2>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3>Search Customer Ledger</h3>
+                            <div class="search-box">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="text" id="phSearchInput" placeholder="Search by name, phone, or ID..." onkeyup="filterPhCustomers()">
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div class="table-responsive">
+                                <table class="table" id="phTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Customer ID</th>
+                                            <th>Name</th>
+                                            <th>Phone</th>
+                                            <th>Book</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="phTableBody">
+                                        <!-- Populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Backup Page -->
+                <section id="backup" class="page">
+                    <div class="page-header">
+                        <h2>System Backup & Data Export</h2>
+                    </div>
+                    <div class="backup-container">
+                        <div class="backup-grid-large">
+                            <!-- JSON Backup -->
+                            <div class="backup-card-large primary-glass">
+                                <div class="icon-circle"><i class="fa-solid fa-file-export"></i></div>
+                                <h3>Full System Backup</h3>
+                                <p>Download a complete snapshot of your system including all settings, customers, products, and transactions. Keep this file safe to restore your system completely.</p>
+                                <button class="btn btn-primary mt-3" onclick="exportDataBackup()"><i class="fa-solid fa-download"></i> Download Full Backup (.json)</button>
+                            </div>
+                            <!-- JSON Restore -->
+                            <div class="backup-card-large secondary-glass">
+                                <div class="icon-circle"><i class="fa-solid fa-file-import"></i></div>
+                                <h3>Restore System</h3>
+                                <p>Upload a previously saved JSON backup file to restore your system. <strong>Warning:</strong> This will overwrite all current data.</p>
+                                <input type="file" id="importBackupFile" accept=".json" style="display: none;" onchange="handleImportBackup(event)">
+                                <button class="btn btn-secondary mt-3" onclick="document.getElementById('importBackupFile').click()"><i class="fa-solid fa-upload"></i> Upload Backup File</button>
+                            </div>
+                            
+                            <!-- CSV Exports -->
+                            <div class="backup-card-large full-width export-csv-glass">
+                                <div class="csv-header">
+                                    <div class="icon-circle"><i class="fa-solid fa-table-list"></i></div>
+                                    <div class="csv-info">
+                                        <h3>Export Data to CSV (Excel)</h3>
+                                        <p>Download specific tables for reporting, analysis, or sharing with accountants.</p>
+                                    </div>
+                                </div>
+                                <div class="csv-buttons-container mt-3">
+                                    <button class="btn btn-outline" onclick="exportCSV('customers')"><i class="fa-solid fa-users"></i> Customers CSV</button>
+                                    <button class="btn btn-outline" onclick="exportCSV('products')"><i class="fa-solid fa-box"></i> Products CSV</button>
+                                    <button class="btn btn-outline" onclick="exportCSV('installments')"><i class="fa-solid fa-file-invoice-dollar"></i> Installments CSV</button>
+                                    <button class="btn btn-outline" onclick="exportCSV('collections')"><i class="fa-solid fa-hand-holding-dollar"></i> Collections CSV</button>
+                                </div>
+                            </div>
+
+                            <!-- Auto Backup Preferences -->
+                            <div class="backup-card-large settings-glass">
+                                <div class="icon-circle"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                                <h3>Auto Backup Preferences</h3>
+                                <p>Set reminders to backup your data regularly.</p>
+                                <div class="form-group mt-3">
+                                    <label>Reminder Frequency</label>
+                                    <select id="autoBackupPref" class="form-control" onchange="saveAutoBackupPref()">
+                                        <option value="none">Disabled</option>
+                                        <option value="daily">Daily Reminder</option>
+                                        <option value="weekly">Weekly Reminder</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Factory Reset -->
+                            <div class="backup-card-large danger-glass">
+                                <div class="icon-circle text-danger"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                                <h3 class="text-danger">Factory Reset</h3>
+                                <p>Permanently delete all customers, products, installments, and collections from this device. <strong>This action cannot be undone.</strong></p>
+                                <button class="btn btn-danger mt-3" onclick="factoryReset()"><i class="fa-solid fa-trash-can"></i> Clear All Data</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Placeholder for other pages -->
+                <section id="placeholder" class="page hidden">
+                    <div class="placeholder-content text-center">
+                        <i class="fa-solid fa-person-digging fa-4x text-muted mb-2 mt-4" style="color: var(--text-muted); opacity: 0.5;"></i>
+                        <h2 style="color: var(--text-primary); margin-top: 20px;">Module will be available in the next update.</h2>
+                        <p style="color: var(--text-secondary); margin-top: 10px;">We are working hard to bring this feature to you.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Global Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/customers.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/installments.js"></script>
+    <script src="js/collections.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/backup.js"></script>
+    <!-- Customer Modal -->
+    <div class="modal-overlay" id="customerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="customerModalTitle">Add New Customer</h3>
+                <button class="close-modal" onclick="closeCustomerModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm">
+                    <div class="form-section-title">Personal Information</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Customer ID</label>
+                            <input type="text" id="custID" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Customer Name</label>
+                            <input type="text" id="custName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Father/Husband Name</label>
+                            <input type="text" id="custFatherName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Phone Number</label>
+                            <input type="text" id="custPhone" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Alternative Phone</label>
+                            <input type="text" id="custAltPhone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp Number</label>
+                            <input type="text" id="custWhatsapp" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Address Details</div>
+                    <div class="form-grid">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Address</label>
+                            <input type="text" id="custAddress" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>City</label>
+                            <input type="text" id="custCity" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>District</label>
+                            <input type="text" id="custDistrict" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>State</label>
+                            <input type="text" id="custState" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>PIN Code</label>
+                            <input type="text" id="custPin" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Identity & Reference</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Aadhaar Number</label>
+                            <input type="text" id="custAadhaar" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>ID Proof Type</label>
+                            <select id="custIDType" class="form-control">
+                                <option value="Aadhaar">Aadhaar</option>
+                                <option value="PAN">PAN Card</option>
+                                <option value="Voter ID">Voter ID</option>
+                                <option value="Driving License">Driving License</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>ID Proof Number</label>
+                            <input type="text" id="custIDNumber" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Occupation</label>
+                            <input type="text" id="custOccupation" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Employer</label>
+                            <input type="text" id="custEmployer" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Reference Person</label>
+                            <input type="text" id="custRefPerson" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Reference Phone</label>
+                            <input type="text" id="custRefPhone" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Collection Book & Product</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Collection Book</label>
+                            <select id="custBook" class="form-control" required>
+                                <option value="Monday">Monday Book</option>
+                                <option value="Tuesday">Tuesday Book</option>
+                                <option value="Wednesday">Wednesday Book</option>
+                                <option value="Thursday">Thursday Book</option>
+                                <option value="Friday">Friday Book</option>
+                                <option value="Common">Common Book</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Product Name</label>
+                            <input type="text" id="custProduct" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Selling Price (₹)</label>
+                            <input type="number" id="custSellingPrice" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Down Payment (₹)</label>
+                            <input type="number" id="custDownPayment" class="form-control" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Finance Amount (₹)</label>
+                            <input type="number" id="custFinanceAmount" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Weekly Installment (₹)</label>
+                            <input type="number" id="custWeeklyAmt" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Photo & Notes</div>
+                    <div class="form-grid">
+                        <div class="photo-upload-container">
+                            <div class="photo-preview" id="custPhotoPreview">
+                                <i class="fa-solid fa-camera"></i>
+                            </div>
+                            <input type="file" id="custPhotoInput" accept="image/*" style="display: none;">
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('custPhotoInput').click()">Upload Photo</button>
+                                <button type="button" class="btn btn-outline btn-sm text-danger" onclick="removeCustPhoto()">Remove</button>
+                            </div>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Notes</label>
+                            <textarea id="custNotes" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="clearCustomerForm()">Clear</button>
+                <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Add New Product</h3>
+                <button class="close-modal" onclick="closeProductModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="form-grid">
+                        <div class="photo-upload-container">
+                            <div class="product-image-preview" id="prodPhotoPreview">
+                                <i class="fa-solid fa-image"></i>
+                            </div>
+                            <input type="file" id="prodPhotoInput" accept="image/*" style="display: none;">
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prodPhotoInput').click()">Upload Image</button>
+                                <button type="button" class="btn btn-outline btn-sm text-danger" onclick="removeProdPhoto()">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Product Details</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Product ID</label>
+                            <input type="text" id="prodID" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Product Name</label>
+                            <input type="text" id="prodName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Brand</label>
+                            <input type="text" id="prodBrand" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" id="prodCategory" class="form-control" list="categoryList">
+                            <datalist id="categoryList">
+                                <option value="Electronics">
+                                <option value="Home Appliances">
+                                <option value="Furniture">
+                                <option value="Mobile Phones">
+                                <option value="Laptop">
+                                <option value="Television">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Model Number</label>
+                            <input type="text" id="prodModel" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Serial Number</label>
+                            <input type="text" id="prodSerial" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Barcode</label>
+                            <input type="text" id="prodBarcode" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Pricing & Supplier</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Purchase Price (₹)</label>
+                            <input type="number" id="prodPurchasePrice" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Selling Price (₹)</label>
+                            <input type="number" id="prodSellingPrice" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Warranty Period</label>
+                            <input type="text" id="prodWarranty" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier Name</label>
+                            <input type="text" id="prodSupplier" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="clearProductForm()">Clear</button>
+                <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Installment Modal -->
+    <div class="modal-overlay" id="installmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="installmentModalTitle">Create New Installment</h3>
+                <button class="close-modal" onclick="closeInstallmentModal()"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="installmentForm">
+                    <div class="form-section-title">Selection</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="required">Installment ID</label>
+                            <input type="text" id="instID" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Customer</label>
+                            <select id="instCustomerSelect" class="form-control" required onchange="populateCustomerDataForInstallment()">
+                                <!-- Dynamically filled -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Products</label>
+                            <select id="instProductSelect" class="form-control" multiple required onchange="populateProductDataForInstallment()" style="height: 100px;">
+                                <!-- Dynamically filled -->
+                            </select>
+                            <small class="text-muted" style="display:block; margin-top:5px;">Hold Ctrl (Windows) or Cmd (Mac) to select multiple</small>
+                        </div>
+                    </div>
+
+                    <!-- Auto populated Summary Card -->
+                    <div class="installment-summary-card" id="instSummaryCard" style="display: none;">
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <p>Customer ID</p>
+                                <h4 id="instSumCustID">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Phone</p>
+                                <h4 id="instSumPhone">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Collection Book</p>
+                                <h4 id="instSumBook">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Product Price</p>
+                                <h4 id="instSumPrice">-</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Financial Details</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Invoice Number</label>
+                            <input type="text" id="instInvoice" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Purchase Date</label>
+                            <input type="date" id="instDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Selling Price (₹)</label>
+                            <input type="number" id="instSellingPrice" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Down Payment (₹)</label>
+                            <input type="number" id="instDownPayment" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Finance Amount (₹)</label>
+                            <input type="number" id="instFinanceAmount" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Weekly Installment (₹)</label>
+                            <input type="number" id="instWeeklyAmt" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="required">First Collection Date</label>
+                            <input type="date" id="instFirstCollDate" class="form-control" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="clearInstallmentForm()">Clear</button>
+                <button class="btn btn-primary" onclick="saveInstallment()">Save Installment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receive Collection Modal -->
+    <div class="modal-overlay" id="collectionModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header" style="background-color: var(--success); color: white; border-bottom: none;">
+                <h3>Receive Collection</h3>
+                <button class="close-modal" onclick="closeCollectionModal()" style="color: white;"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="collectionForm">
+                    <div class="installment-summary-card" style="border-left-color: var(--success); background-color: rgba(25, 135, 84, 0.1);">
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <p>Customer</p>
+                                <select id="collGenericSelect" style="display:none;" class="form-control" onchange="collGenericSelectChanged()">
+                                    <option value="">Select Customer/Installment...</option>
+                                </select>
+                                <h4 id="collCustName">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Product</p>
+                                <h4 id="collProduct">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Weekly Amount</p>
+                                <h4 id="collWeeklyAmt">-</h4>
+                            </div>
+                            <div class="summary-item">
+                                <p>Out. Balance</p>
+                                <h4 id="collBalance" class="text-danger">-</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid mt-2">
+                        <div class="form-group">
+                            <label class="required">Payment Amount (₹)</label>
+                            <input type="number" id="collAmount" class="form-control" required style="font-size: 1.5rem; font-weight: bold; color: var(--success);">
+                        </div>
+                        <div class="form-group">
+                            <label class="required">Payment Method</label>
+                            <select id="collMethod" class="form-control">
+                                <option value="Cash">Cash</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Reference Number (UPI/Bank)</label>
+                            <input type="text" id="collReference" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Collected By</label>
+                            <input type="text" id="collAgent" class="form-control" value="Admin">
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Remarks</label>
+                            <input type="text" id="collRemarks" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="justify-content: space-between;">
+                <div>
+                    <button class="btn btn-outline text-danger" onclick="markMissedCollection()">Mark as Missed</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" onclick="closeCollectionModal()">Cancel</button>
+                    <button class="btn btn-success" onclick="saveCollection()">Save Collection</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/customerHistory.js"></script>
+    <!-- Customer Payment History Modal -->
+    <div class="modal-overlay full-screen-modal" id="customerHistoryModal">
+        <div class="modal-content" id="chModalContent">
+            <div class="modal-header">
+                <h3>Customer Payment History (Ledger)</h3>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline btn-sm" onclick="printPassbook()"><i class="fa-solid fa-book"></i> Print Passbook</button>
+                    <button class="btn btn-outline btn-sm" onclick="printLedger()"><i class="fa-solid fa-print"></i> Print Ledger</button>
+                    <button class="btn btn-primary btn-sm" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    <button class="btn btn-success btn-sm" onclick="exportExcel()"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportJSON()"><i class="fa-solid fa-code"></i> JSON</button>
+                    <button class="close-modal" onclick="closeCustomerHistory()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="modal-body" id="chPrintArea">
+                
+                <!-- SECTION 1: CUSTOMER DETAILS -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Customer Details</h4>
+                <div class="ch-header-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+                    <div class="ch-header-item" style="grid-row: span 2;">
+                        <img id="chPhoto" src="https://via.placeholder.com/100?text=Photo" style="width:100px; height:100px; object-fit:cover; border-radius:10px; border:2px solid var(--primary);">
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer ID</label>
+                        <span id="chID">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Name</label>
+                        <span id="chName">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Phone Number</label>
+                        <span id="chPhone">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>WhatsApp Number</label>
+                        <span id="chWhatsApp">-</span>
+                    </div>
+                    <div class="ch-header-item" style="grid-column: span 2;">
+                        <label>Address</label>
+                        <span id="chAddress">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Collection Book</label>
+                        <span id="chBook">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Status</label>
+                        <span id="chStatusBadge">-</span>
+                    </div>
+                    <div class="ch-header-item">
+                        <label>Customer Since</label>
+                        <span id="chSince">-</span>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: INSTALLMENT DETAILS -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Installment Details</h4>
+                <div class="ch-card" style="margin-bottom: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                    <div class="ch-header-item"><label>Installment ID</label><span id="idInstID">-</span></div>
+                    <div class="ch-header-item"><label>Invoice Number</label><span id="idInvoice">-</span></div>
+                    <div class="ch-header-item"><label>Product Name</label><span id="idProduct">-</span></div>
+                    <div class="ch-header-item"><label>Brand</label><span id="idBrand">-</span></div>
+                    <div class="ch-header-item"><label>Model Number</label><span id="idModel">-</span></div>
+                    <div class="ch-header-item"><label>Serial Number</label><span id="idSerial">-</span></div>
+                    <div class="ch-header-item"><label>Purchase Date</label><span id="idPurchaseDate">-</span></div>
+                    <div class="ch-header-item"><label>Selling Price</label><span id="idSellingPrice">-</span></div>
+                    <div class="ch-header-item"><label>Down Payment</label><span id="idDownPayment">-</span></div>
+                    <div class="ch-header-item"><label>Finance Amount</label><span id="idFinanceAmt">-</span></div>
+                    <div class="ch-header-item"><label>Weekly Installment</label><span id="idWeeklyAmt">-</span></div>
+                    <div class="ch-header-item"><label>Number of Weeks</label><span id="idNumWeeks">-</span></div>
+                    <div class="ch-header-item"><label>Weeks Paid</label><span id="idWeeksPaid">-</span></div>
+                    <div class="ch-header-item"><label>Weeks Remaining</label><span id="idWeeksRem">-</span></div>
+                    <div class="ch-header-item"><label>Outstanding Balance</label><span id="idOutBal" class="text-danger">-</span></div>
+                    <div class="ch-header-item"><label>Collection Day</label><span id="idCollDay">-</span></div>
+                    <div class="ch-header-item"><label>Collection Book</label><span id="idCollBook">-</span></div>
+                    <div class="ch-header-item"><label>First Collection Date</label><span id="idFirstDate">-</span></div>
+                    <div class="ch-header-item"><label>Last Collection Date</label><span id="idLastDate">-</span></div>
+                    <div class="ch-header-item"><label>Next Collection Date</label><span id="idNextDate">-</span></div>
+                    <div class="ch-header-item"><label>Expected Completion Date</label><span id="idExpectedDate">-</span></div>
+                    <div class="ch-header-item"><label>Installment Status</label><span id="idInstStatus">-</span></div>
+                </div>
+
+                <!-- SECTION 3: PAYMENT SUMMARY -->
+                <h4 style="margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Payment Summary</h4>
+                <div class="ch-summary-cards">
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Finance Amount</p><h3 id="chCardFinance">?0</h3></div>
+                    <div class="ch-card success"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Total Amount Paid</p><h3 id="chCardPaid">?0</h3></div>
+                    <div class="ch-card warning"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Outstanding Balance</p><h3 id="chCardBalance">?0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Total Collections Received</p><h3 id="chCardCollections">0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Remaining Weeks</p><h3 id="chCardRemWeeks">0</h3></div>
+                    <div class="ch-card danger"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Missed Collections</p><h3 id="chCardMissed">0</h3></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Last Payment Date</p><h4 id="chCardLastDate">-</h4></div>
+                    <div class="ch-card"><p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:5px;">Next Due Date</p><h4 id="chCardNextDate">-</h4></div>
+                </div>
+
+                <!-- SECTION 8: INSTALLMENT CALCULATIONS -->
+                <div class="ch-card" style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Average Weekly Payment:</span> <strong id="calcAvgWeekly">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Collection Percentage:</span> <strong id="calcPercentage">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Remaining Installment Amt:</span> <strong id="calcRemAmt">-</strong></div>
+                    <div><span style="color:var(--text-muted); font-size:0.9rem;">Total Weeks:</span> <strong id="calcTotalWeeks">-</strong></div>
+                </div>
+
+                <!-- SECTION 4: INSTALLMENT PROGRESS -->
+                <div class="ch-progress-container">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>Payment Progress <span id="chProgressWeeksText" style="color:var(--text-muted); margin-left:10px;">(0 of 0 Weeks Completed)</span></span>
+                        <span id="chProgressText">0%</span>
+                    </div>
+                    <div class="ch-progress-bar-wrap">
+                        <div class="ch-progress-fill" id="chProgressBar"></div>
+                    </div>
+                </div>
+
+                <!-- Toolbar & Filters -->
+                <div class="ch-toolbar" data-html2canvas-ignore="true" style="margin-bottom:15px;">
+                    <div class="ch-filters">
+                        <button class="btn btn-outline btn-sm active" id="btnTableView" onclick="toggleChView('table')"><i class="fa-solid fa-table"></i> Payment History</button>
+                        <button class="btn btn-outline btn-sm" id="btnMissedView" onclick="toggleChView('missed')"><i class="fa-solid fa-triangle-exclamation"></i> Missed Collections</button>
+                        <button class="btn btn-outline btn-sm" id="btnTimelineView" onclick="toggleChView('timeline')"><i class="fa-solid fa-stream"></i> Timeline</button>
+                    </div>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="chSearch" onkeyup="searchCustomerHistory()" placeholder="Search history...">
+                    </div>
+                </div>
+
+                <!-- SECTION 5: PAYMENT HISTORY TABLE -->
+                <div class="table-responsive" id="chTableView">
+                    <table class="table" id="chTable">
+                        <thead>
+                            <tr>
+                                <th>Receipt No</th>
+                                <th>Collection Date</th>
+                                <th>Collection Time</th>
+                                <th>Week No</th>
+                                <th>Installment No</th>
+                                <th>Collection Book</th>
+                                <th>Amount Paid</th>
+                                <th>Payment Method</th>
+                                <th>Collected By</th>
+                                <th>Balance After</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chTableBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 6: MISSED COLLECTIONS TABLE -->
+                <div class="table-responsive" id="chMissedView" style="display:none;">
+                    <table class="table" id="chMissedTable">
+                        <thead>
+                            <tr>
+                                <th>Missed Date</th>
+                                <th>Week No</th>
+                                <th>Reason</th>
+                                <th>Collection Book</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chMissedBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SECTION 7: INSTALLMENT TIMELINE -->
+                <div id="chTimelineView" style="display:none;">
+                    <div class="ch-timeline" id="chTimelineBody">
+                        <!-- Dynamic -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <!-- SECTION 9: PRINTABLE CUSTOMER PASSBOOK (Hidden normally) -->
+    <div id="passbookPrintArea" style="display:none; padding:40px; background:white; color:black; font-family:sans-serif;">
+        <div style="text-align:center; margin-bottom:20px;">
+            <h1 style="margin:0; font-size:24px;">CITY Installment Collection Management</h1>
+            <h2 style="margin:5px 0; font-size:18px;">Customer Passbook</h2>
+            <p id="pbPrintDate" style="margin:0; font-size:12px; color:#555;"></p>
+        </div>
+        <hr style="border:1px solid #ccc;">
+        <div style="display:flex; justify-content:space-between; margin-top:20px;">
+            <div style="width:48%;">
+                <h3 style="border-bottom:1px solid #eee; padding-bottom:5px;">Customer Details</h3>
+                <p><strong>Name:</strong> <span id="pbCustName"></span></p>
+                <p><strong>ID:</strong> <span id="pbCustID"></span></p>
+                <p><strong>Phone:</strong> <span id="pbCustPhone"></span></p>
+                <p><strong>Address:</strong> <span id="pbCustAddress"></span></p>
+            </div>
+            <div style="width:48%;">
+                <h3 style="border-bottom:1px solid #eee; padding-bottom:5px;">Product Details</h3>
+                <p><strong>Product:</strong> <span id="pbProduct"></span></p>
+                <p><strong>Brand:</strong> <span id="pbBrand"></span></p>
+                <p><strong>Model:</strong> <span id="pbModel"></span></p>
+                <p><strong>Serial:</strong> <span id="pbSerial"></span></p>
+            </div>
+        </div>
+        
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Installment Details</h3>
+        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
+            <p style="width:30%;"><strong>Finance Amt:</strong> <span id="pbFinance"></span></p>
+            <p style="width:30%;"><strong>Weekly Amt:</strong> <span id="pbWeekly"></span></p>
+            <p style="width:30%;"><strong>Total Weeks:</strong> <span id="pbTotalWeeks"></span></p>
+            <p style="width:30%;"><strong>Purchase Date:</strong> <span id="pbPurchaseDate"></span></p>
+            <p style="width:30%;"><strong>Book:</strong> <span id="pbBook"></span></p>
+            <p style="width:30%;"><strong>Status:</strong> <span id="pbStatus"></span></p>
+        </div>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Finance Summary</h3>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <p><strong>Total Paid:</strong> <span id="pbTotalPaid"></span></p>
+            <p><strong>Outstanding Balance:</strong> <span id="pbOutBal"></span></p>
+            <p><strong>Progress:</strong> <span id="pbProgressText"></span></p>
+        </div>
+        <div style="width:100%; height:15px; background:#eee; border-radius:5px; overflow:hidden;">
+            <div id="pbProgressBar" style="height:100%; background:#4CAF50; width:0%;"></div>
+        </div>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:30px;">Payment History</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12px;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="border:1px solid #ddd; padding:5px;">Date</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Receipt</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Week</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Amount</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Balance</th>
+                </tr>
+            </thead>
+            <tbody id="pbHistoryBody"></tbody>
+        </table>
+
+        <h3 style="border-bottom:1px solid #eee; padding-bottom:5px; margin-top:20px;">Missed Collections</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:40px; font-size:12px;">
+            <thead>
+                <tr style="background:#f5f5f5;">
+                    <th style="border:1px solid #ddd; padding:5px;">Date</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Week</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Reason / Remarks</th>
+                </tr>
+            </thead>
+            <tbody id="pbMissedBody"></tbody>
+        </table>
+
+        <div style="display:flex; justify-content:space-between; margin-top:60px;">
+            <div style="text-align:center;">
+                <p>_______________________</p>
+                <p>Customer Signature</p>
+            </div>
+            <div style="text-align:center;">
+                <p>_______________________</p>
+                <p>Authorized Signatory</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Customer Modal -->
+    <div class="modal-overlay" id="viewCustomerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="viewCustomerModalTitle">Customer Details</h3>
+                <button class="close-modal" onclick="document.getElementById('viewCustomerModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="viewCustomerModalBody" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('viewCustomerModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- View Product Modal -->
+    <div class="modal-overlay" id="viewProductModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="viewProductModalTitle">Product Details</h3>
+                <button class="close-modal" onclick="document.getElementById('viewProductModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="viewProductModalBody" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('viewProductModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- View Installment Modal -->
+    <div class="modal-overlay" id="viewInstallmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="viewInstallmentModalTitle">Installment Details</h3>
+                <button class="close-modal" onclick="document.getElementById('viewInstallmentModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="viewInstallmentModalBody" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('viewInstallmentModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Daily Summary Modal -->
+    <div class="modal-overlay" id="dailySummaryModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 id="dailySummaryModalTitle">Daily Summary</h3>
+                <button class="close-modal" onclick="document.getElementById('dailySummaryModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="dailySummaryModalBody" style="font-size: 14px;">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('dailySummaryModal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Ledger Modal -->
+    <div class="modal-overlay" id="ledgerModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 id="ledgerModalTitle">Customer Ledger</h3>
+                <button class="close-modal" onclick="document.getElementById('ledgerModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="installment-summary-card" style="margin-bottom: 20px;">
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <p>Customer</p>
+                            <h4 id="ledgerCustName">-</h4>
+                        </div>
+                        <div class="summary-item">
+                            <p>Phone</p>
+                            <h4 id="ledgerCustPhone">-</h4>
+                        </div>
+                        <div class="summary-item">
+                            <p>Total Purchase</p>
+                            <h4 id="ledgerTotalPurchase">-</h4>
+                        </div>
+                        <div class="summary-item">
+                            <p>Current Balance</p>
+                            <h4 id="ledgerCurrentBalance" class="text-danger">-</h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Method / Ref</th>
+                                <th style="text-align: right; color: var(--danger);">Debit (Charge)</th>
+                                <th style="text-align: right; color: var(--success);">Credit (Payment)</th>
+                                <th style="text-align: right;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('ledgerModal').classList.remove('active')">Close</button>
+                <button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Ledger</button>
+            </div>
+        </div>
+    </div>
+
+
